@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(backend/venv/Scripts/python.exe backend/manage.py test*)",
+      "Bash(backend/venv/Scripts/python.exe backend/manage.py check*)",
+      "Bash(npm --prefix frontend run build*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)"
+    ],
+    "ask": [
+      "Bash(git push*)",
+      "Bash(*community_db.sql*)"
+    ],
+    "deny": [
+      "Read(backend/.env)",
+      "Edit(backend/.env)",
+      "Bash(*manage.py makemigrations*)"
+    ]
+  },
+  "env": {
+    "PYTHONDONTWRITEBYTECODE": "1"
+  }
+}
