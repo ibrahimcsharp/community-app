@@ -1,0 +1,5 @@
+Django>=5.2,<5.3                   # web framework (5.2 is the long-term support version)
+djangorestframework>=3.16         # turns Django views into a JSON API
+djangorestframework-simplejwt>=5.5  # JWT login tokens
+django-cors-headers>=4.7          # lets the Angular app (port 4200) call the API (port 8000)
+PyMySQL>=1.1                      # MySQL/MariaDB driver written in pure Python
