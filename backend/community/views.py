@@ -3,6 +3,7 @@ Community views: categories, posts and comments for logged-in users.
 
 The rules, in plain words:
   * Everyone sees approved posts/comments. You also see your own, whatever their status.
+  * Admins can open any post and see all its comments (the board itself shows the same as for users).
   * New posts/comments start as 'pending' (admins' are approved straight away).
   * You can edit/delete your own. Editing sends it back to 'pending' for re-approval.
   * Admins can edit/delete anything.
@@ -22,15 +23,26 @@ from .serializers import CategorySerializer, CommentSerializer, PostSerializer
 # ---------------------------------------------------------------------
 # Small helpers used by the views below
 # ---------------------------------------------------------------------
-def visible_to(user):
-    """Filter: rows that are approved, or written by this user."""
+def approved_or_mine(user):
+    """Filter: rows that are approved, or written by this user. Used for the board."""
     return Q(status="approved") | Q(user=user)
 
 
+def visible_to(user):
+    """Filter for opening one post and its comments. Admins see everything,
+    so they can check pending items in context."""
+    if user.is_admin:
+        return Q()  # no filter
+    return approved_or_mine(user)
+
+
 def posts_with_comment_count():
-    """All posts, each with the number of approved comments attached."""
-    return Post.objects.select_related("user", "category").annotate(
-        comment_count=Count("comments", filter=Q(comments__status="approved"))
+    """All posts, newest first, each with the number of approved comments attached."""
+    return (
+        Post.objects.select_related("user", "category")
+        .annotate(comment_count=Count("comments", filter=Q(comments__status="approved")))
+        # Must be explicit: Django ignores Meta.ordering on queries with Count().
+        .order_by("-created_at", "-id")
     )
 
 
@@ -77,7 +89,7 @@ def post_list(request):
     POST: write a new post  {title, body, category}
     """
     if request.method == "GET":
-        posts = posts_with_comment_count().filter(visible_to(request.user))
+        posts = posts_with_comment_count().filter(approved_or_mine(request.user))
 
         category_id = request.query_params.get("category")
         if category_id:

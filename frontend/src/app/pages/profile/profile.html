@@ -1,0 +1,63 @@
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <h1 class="h3 mb-3">My profile</h1>
+
+    @if (auth.user(); as user) {
+      <!-- Account info (read only) -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-4">Username</dt>
+            <dd class="col-sm-8">{{ user.username }}</dd>
+
+            <dt class="col-sm-4">Role</dt>
+            <dd class="col-sm-8 text-capitalize">{{ user.role }}</dd>
+
+            <dt class="col-sm-4">Status</dt>
+            <dd class="col-sm-8"><app-status-badge [status]="user.status" /></dd>
+
+            <dt class="col-sm-4">Member since</dt>
+            <dd class="col-sm-8 mb-0">{{ user.created_at | date: 'longDate' }}</dd>
+          </dl>
+        </div>
+      </div>
+    }
+
+    <!-- Editable fields -->
+    <div class="card shadow-sm">
+      <div class="card-body">
+        @if (success()) {
+          <div class="alert alert-success">{{ success() }}</div>
+        }
+        @if (error()) {
+          <div class="alert alert-danger">{{ error() }}</div>
+        }
+
+        <form #profileForm="ngForm" (ngSubmit)="save()">
+          <div class="mb-3">
+            <label class="form-label" for="email">Email</label>
+            <input id="email" name="email" type="email" class="form-control"
+                   [(ngModel)]="form.email" required email />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="full_name">Full name</label>
+            <input id="full_name" name="full_name" class="form-control"
+                   [(ngModel)]="form.full_name" maxlength="100" />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="bio">About me</label>
+            <textarea id="bio" name="bio" class="form-control" rows="3"
+                      [(ngModel)]="form.bio" maxlength="500"></textarea>
+            <div class="form-text">{{ form.bio.length }} / 500</div>
+          </div>
+
+          <button class="btn btn-primary" type="submit" [disabled]="profileForm.invalid || busy()">
+            {{ busy() ? 'Saving…' : 'Save profile' }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

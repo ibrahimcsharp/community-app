@@ -347,6 +347,13 @@ INSERT INTO moderation_logs (admin_id, target_type, target_id, action, note, cre
 (1, 'post',    5, 'reject',  'Advertising is not allowed.', NOW() - INTERVAL 5 DAY);
 
 
+-- The rows above got updated_at = "now" (the import time). Make them look
+-- unedited by copying created_at, so the app doesn't show "edited".
+UPDATE users    SET updated_at = created_at;
+UPDATE posts    SET updated_at = created_at;
+UPDATE comments SET updated_at = created_at;
+
+
 -- ---------------------------------------------------------------------
 --  SECTION 5: USEFUL QUERIES (remove the "-- " to run one)
 -- ---------------------------------------------------------------------

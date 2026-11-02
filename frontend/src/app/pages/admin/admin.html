@@ -1,0 +1,203 @@
+<h1 class="h3 mb-3">Admin panel</h1>
+
+<!-- ===== Tabs (with the number of pending items) ===== -->
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item">
+    <button class="nav-link" type="button" [class.active]="tab() === 'users'" (click)="showTab('users')">
+      Users
+      @if (stats()?.pending_users) { <span class="badge text-bg-warning ms-1">{{ stats()?.pending_users }}</span> }
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" type="button" [class.active]="tab() === 'posts'" (click)="showTab('posts')">
+      Posts
+      @if (stats()?.pending_posts) { <span class="badge text-bg-warning ms-1">{{ stats()?.pending_posts }}</span> }
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" type="button" [class.active]="tab() === 'comments'" (click)="showTab('comments')">
+      Comments
+      @if (stats()?.pending_comments) { <span class="badge text-bg-warning ms-1">{{ stats()?.pending_comments }}</span> }
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" type="button" [class.active]="tab() === 'logs'" (click)="showTab('logs')">Log</button>
+  </li>
+</ul>
+
+<!-- ===== Status filter (not on the Log tab) ===== -->
+@if (tab() !== 'logs') {
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <label class="form-label mb-0" for="statusFilter">Show</label>
+    <select id="statusFilter" class="form-select w-auto"
+            [ngModel]="statusFilter" (ngModelChange)="setStatusFilter($event)">
+      <option value="pending">Pending</option>
+      <option value="approved">Approved</option>
+      <option value="rejected">Rejected</option>
+      @if (tab() === 'users') {
+        <option value="blocked">Blocked</option>
+      }
+      <option value="">All</option>
+    </select>
+  </div>
+}
+
+@if (message()) {
+  <div class="alert alert-success py-2">{{ message() }}</div>
+}
+@if (error()) {
+  <div class="alert alert-danger py-2">{{ error() }}</div>
+}
+@if (loading()) {
+  <p class="text-body-secondary">Loading…</p>
+}
+
+<!-- ===== Users ===== -->
+@if (tab() === 'users' && !loading()) {
+  <div class="table-responsive">
+    <table class="table table-hover align-middle bg-white">
+      <thead>
+        <tr><th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th class="text-end">Actions</th></tr>
+      </thead>
+      <tbody>
+        @for (user of users(); track user.id) {
+          <tr>
+            <td><strong>{{ user.username }}</strong><br /><span class="small text-body-secondary">{{ user.full_name }}</span></td>
+            <td>{{ user.email }}</td>
+            <td class="text-capitalize">{{ user.role }}</td>
+            <td><app-status-badge [status]="user.status" /></td>
+            <td class="small">{{ user.created_at | date: 'mediumDate' }}</td>
+            <td class="text-end text-nowrap">
+              @if (user.id === auth.user()?.id) {
+                <span class="small text-body-secondary">(you)</span>
+              } @else {
+                @switch (user.status) {
+                  @case ('pending') {
+                    <button class="btn btn-sm btn-success me-1" (click)="userAction(user, 'approve')">Approve</button>
+                    <button class="btn btn-sm btn-outline-danger" (click)="userAction(user, 'reject')">Reject</button>
+                  }
+                  @case ('approved') {
+                    <button class="btn btn-sm btn-outline-dark" (click)="userAction(user, 'block')">Block</button>
+                  }
+                  @case ('blocked') {
+                    <button class="btn btn-sm btn-outline-success" (click)="userAction(user, 'unblock')">Unblock</button>
+                  }
+                  @case ('rejected') {
+                    <button class="btn btn-sm btn-outline-success" (click)="userAction(user, 'approve')">Approve</button>
+                  }
+                }
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6" class="text-center text-body-secondary py-4">Nothing here. 🎉</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+<!-- ===== Posts ===== -->
+@if (tab() === 'posts' && !loading()) {
+  <div class="table-responsive">
+    <table class="table table-hover align-middle bg-white">
+      <thead>
+        <tr><th>Post</th><th>Author</th><th>Status</th><th>Written</th><th class="text-end">Actions</th></tr>
+      </thead>
+      <tbody>
+        @for (post of posts(); track post.id) {
+          <tr>
+            <td>
+              <a [routerLink]="['/posts', post.id]"><strong>{{ post.title }}</strong></a>
+              <span class="badge text-bg-light border ms-1">{{ post.category_name }}</span>
+              <div class="small text-body-secondary">{{ post.body | slice: 0 : 120 }}{{ post.body.length > 120 ? '…' : '' }}</div>
+              @if (post.reject_reason) {
+                <div class="small text-danger">Reason: {{ post.reject_reason }}</div>
+              }
+            </td>
+            <td>{{ post.author.username }}</td>
+            <td><app-status-badge [status]="post.status" /></td>
+            <td class="small">{{ post.created_at | date: 'short' }}</td>
+            <td class="text-end text-nowrap">
+              @if (post.status !== 'approved') {
+                <button class="btn btn-sm btn-success me-1" (click)="postAction(post, 'approve')">Approve</button>
+              }
+              @if (post.status !== 'rejected') {
+                <button class="btn btn-sm btn-outline-danger" (click)="postAction(post, 'reject')">Reject</button>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="5" class="text-center text-body-secondary py-4">Nothing here. 🎉</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+<!-- ===== Comments ===== -->
+@if (tab() === 'comments' && !loading()) {
+  <div class="table-responsive">
+    <table class="table table-hover align-middle bg-white">
+      <thead>
+        <tr><th>Comment</th><th>On post</th><th>Author</th><th>Status</th><th>Written</th><th class="text-end">Actions</th></tr>
+      </thead>
+      <tbody>
+        @for (comment of comments(); track comment.id) {
+          <tr>
+            <td>
+              {{ comment.body | slice: 0 : 150 }}{{ comment.body.length > 150 ? '…' : '' }}
+              @if (comment.reject_reason) {
+                <div class="small text-danger">Reason: {{ comment.reject_reason }}</div>
+              }
+            </td>
+            <td><a [routerLink]="['/posts', comment.post]">{{ comment.post_title }}</a></td>
+            <td>{{ comment.author.username }}</td>
+            <td><app-status-badge [status]="comment.status" /></td>
+            <td class="small">{{ comment.created_at | date: 'short' }}</td>
+            <td class="text-end text-nowrap">
+              @if (comment.status !== 'approved') {
+                <button class="btn btn-sm btn-success me-1" (click)="commentAction(comment, 'approve')">Approve</button>
+              }
+              @if (comment.status !== 'rejected') {
+                <button class="btn btn-sm btn-outline-danger" (click)="commentAction(comment, 'reject')">Reject</button>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6" class="text-center text-body-secondary py-4">Nothing here. 🎉</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+<!-- ===== Log ===== -->
+@if (tab() === 'logs' && !loading()) {
+  <div class="table-responsive">
+    <table class="table table-sm align-middle bg-white">
+      <thead>
+        <tr><th>When</th><th>Admin</th><th>Action</th><th>Item</th><th>Note</th></tr>
+      </thead>
+      <tbody>
+        @for (log of logs(); track log.id) {
+          <tr>
+            <td class="small text-nowrap">{{ log.created_at | date: 'short' }}</td>
+            <td>{{ log.admin_username }}</td>
+            <td class="text-capitalize">{{ log.action }}</td>
+            <td>
+              @if (log.target_type === 'post') {
+                <a [routerLink]="['/posts', log.target_id]">post #{{ log.target_id }}</a>
+              } @else {
+                {{ log.target_type }} #{{ log.target_id }}
+              }
+            </td>
+            <td class="small">{{ log.note }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="5" class="text-center text-body-secondary py-4">No actions yet.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

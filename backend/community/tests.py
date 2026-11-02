@@ -47,6 +47,11 @@ class CommunityTests(APITestCase):
         self.as_user(self.john)
         self.assertIn("Hello", self.feed_titles())
 
+    def test_feed_is_newest_first(self):
+        self.new_post("Older", user=self.admin)
+        self.new_post("Newer", user=self.admin)
+        self.assertEqual(self.feed_titles()[:2], ["Newer", "Older"])
+
     def test_admin_post_is_approved_at_once(self):
         self.assertEqual(self.new_post(user=self.admin).data["status"], "approved")
 
@@ -117,6 +122,14 @@ class CommunityTests(APITestCase):
         response = self.client.post(f"/api/admin/users/{maria.id}/approve/")
         self.assertEqual(response.data["status"], "approved")
         self.assertEqual(self.client.get("/api/admin/stats/").data["pending_users"], 0)
+
+    def test_admin_can_open_pending_post_and_comments(self):
+        post = Post.objects.create(user=self.sara, category=self.category, title="A", body="B")
+        self.as_user(self.admin)
+        self.assertEqual(self.client.get(f"/api/posts/{post.id}/").status_code, 200)
+
+        self.as_user(self.john)
+        self.assertEqual(self.client.get(f"/api/posts/{post.id}/").status_code, 404)
 
     def test_unknown_action(self):
         self.as_user(self.admin)

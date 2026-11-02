@@ -1,0 +1,82 @@
+<!-- Title + "write" button -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+  <h1 class="h3 mb-0">Community</h1>
+  @if (!showNewPostForm()) {
+    <button class="btn btn-primary" type="button" (click)="showNewPostForm.set(true)">Write a post</button>
+  }
+</div>
+
+<!-- New post form (the same component as the /posts/new page) -->
+@if (showNewPostForm()) {
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <app-post-form [embedded]="true" (saved)="onPostSaved()" (cancelled)="showNewPostForm.set(false)" />
+    </div>
+  </div>
+}
+
+<!-- Filters -->
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+  <div class="btn-group" role="group" aria-label="Which posts">
+    <button type="button" class="btn btn-outline-primary" [class.active]="!filters.mine" (click)="setMine(false)">
+      All posts
+    </button>
+    <button type="button" class="btn btn-outline-primary" [class.active]="filters.mine" (click)="setMine(true)">
+      My posts
+    </button>
+  </div>
+
+  <select class="form-select w-auto" aria-label="Category"
+          [ngModel]="filters.category" (ngModelChange)="setCategory($event)">
+    <option value="">All categories</option>
+    @for (category of categories(); track category.id) {
+      <option [value]="category.id">{{ category.name }}</option>
+    }
+  </select>
+</div>
+
+<!-- The posts -->
+@if (error()) {
+  <div class="alert alert-danger">{{ error() }}</div>
+}
+
+@if (loading()) {
+  <p class="text-body-secondary">Loading posts…</p>
+} @else {
+  @for (post of posts(); track post.id) {
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between gap-2">
+          <h2 class="h5 mb-1">
+            <a class="text-decoration-none" [routerLink]="['/posts', post.id]">{{ post.title }}</a>
+          </h2>
+          @if (post.status !== 'approved') {
+            <app-status-badge [status]="post.status" />
+          }
+        </div>
+
+        <p class="small text-body-secondary mb-2">
+          <span class="badge text-bg-light border me-1">{{ post.category_name }}</span>
+          by <strong>{{ post.author.username }}</strong> · {{ post.created_at | date: 'medium' }}
+        </p>
+
+        <p class="post-body mb-2">{{ post.body | slice: 0 : 250 }}{{ post.body.length > 250 ? '…' : '' }}</p>
+
+        @if (post.status === 'pending') {
+          <p class="small text-warning-emphasis mb-2">Only you can see this until an admin approves it.</p>
+        }
+        @if (post.status === 'rejected' && post.reject_reason) {
+          <p class="small text-danger mb-2">Rejected: {{ post.reject_reason }}</p>
+        }
+
+        <a class="small" [routerLink]="['/posts', post.id]">
+          {{ post.comment_count }} {{ post.comment_count === 1 ? 'comment' : 'comments' }} →
+        </a>
+      </div>
+    </div>
+  } @empty {
+    <div class="text-center text-body-secondary py-5">
+      No posts here yet. Be the first to write one!
+    </div>
+  }
+}

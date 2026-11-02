@@ -1,0 +1,21 @@
+/*
+  Global styles. Most of the look comes from Bootstrap (loaded in angular.json),
+  so this file only holds a few small additions. Change colours here or use
+  Bootstrap classes in the HTML templates.
+*/
+
+body {
+  background-color: #f4f6fa;
+}
+
+/* Keep the line breaks people type in posts and comments. */
+.post-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Tables in the admin panel sit on a white card. */
+.table {
+  border-radius: 0.5rem;
+  overflow: hidden;
+}

@@ -1,0 +1,106 @@
+<a class="d-inline-block mb-3" routerLink="/community">← Back to community</a>
+
+@if (error()) {
+  <div class="alert alert-danger">{{ error() }}</div>
+}
+
+@if (post(); as post) {
+  <!-- ===== The post ===== -->
+  <article class="card shadow-sm mb-4">
+    <div class="card-body p-4">
+      <div class="d-flex flex-wrap justify-content-between gap-2">
+        <h1 class="h3">{{ post.title }}</h1>
+        @if (post.status !== 'approved') {
+          <app-status-badge [status]="post.status" />
+        }
+      </div>
+
+      <p class="small text-body-secondary">
+        <span class="badge text-bg-light border me-1">{{ post.category_name }}</span>
+        by <strong>{{ post.author.username }}</strong> · {{ post.created_at | date: 'medium' }}
+        @if (post.updated_at !== post.created_at) {
+          · edited {{ post.updated_at | date: 'short' }}
+        }
+      </p>
+
+      @if (post.status === 'pending') {
+        <div class="alert alert-warning py-2">Waiting for admin approval. Only you (and admins) can see it.</div>
+      }
+      @if (post.status === 'rejected') {
+        <div class="alert alert-danger py-2">
+          Rejected by an admin{{ post.reject_reason ? ': ' + post.reject_reason : '.' }}
+          You can edit it and it will be checked again.
+        </div>
+      }
+
+      <p class="post-body">{{ post.body }}</p>
+
+      @if (canChange(post.author)) {
+        <div class="d-flex gap-2">
+          <a class="btn btn-sm btn-outline-primary" [routerLink]="['/posts', post.id, 'edit']">Edit</a>
+          <button class="btn btn-sm btn-outline-danger" type="button" (click)="deletePost()">Delete</button>
+        </div>
+      }
+    </div>
+  </article>
+
+  <!-- ===== Comments ===== -->
+  <h2 class="h5 mb-3">Comments ({{ comments().length }})</h2>
+
+  @if (commentError()) {
+    <div class="alert alert-danger">{{ commentError() }}</div>
+  }
+
+  @for (comment of comments(); track comment.id) {
+    <div class="card mb-2">
+      <div class="card-body py-3">
+        <div class="d-flex flex-wrap justify-content-between gap-2 small text-body-secondary mb-1">
+          <span><strong>{{ comment.author.username }}</strong> · {{ comment.created_at | date: 'medium' }}</span>
+          @if (comment.status !== 'approved') {
+            <app-status-badge [status]="comment.status" />
+          }
+        </div>
+
+        @if (editingId() === comment.id) {
+          <!-- Editing this comment -->
+          <textarea class="form-control mb-2" rows="3" name="editText" [(ngModel)]="editText"></textarea>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-primary" type="button" [disabled]="!editText.trim()"
+                    (click)="saveEdit(comment)">Save</button>
+            <button class="btn btn-sm btn-outline-secondary" type="button" (click)="cancelEdit()">Cancel</button>
+          </div>
+        } @else {
+          <p class="post-body mb-1">{{ comment.body }}</p>
+          @if (comment.status === 'rejected' && comment.reject_reason) {
+            <p class="small text-danger mb-1">Rejected: {{ comment.reject_reason }}</p>
+          }
+          @if (canChange(comment.author)) {
+            <div class="d-flex gap-3 small">
+              <button class="btn btn-link btn-sm p-0" type="button" (click)="startEdit(comment)">Edit</button>
+              <button class="btn btn-link btn-sm p-0 text-danger" type="button" (click)="deleteComment(comment)">Delete</button>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  } @empty {
+    <p class="text-body-secondary">No comments yet.</p>
+  }
+
+  <!-- ===== Add a comment (only on approved posts) ===== -->
+  @if (post.status === 'approved') {
+    <form class="mt-4" #commentForm="ngForm" (ngSubmit)="addComment()">
+      <label class="form-label" for="newComment">Add a comment</label>
+      <textarea id="newComment" name="newComment" class="form-control mb-2" rows="3"
+                [(ngModel)]="newComment" required></textarea>
+      <div class="d-flex flex-wrap align-items-center gap-3">
+        <button class="btn btn-primary" type="submit" [disabled]="!newComment.trim()">Post comment</button>
+        @if (!auth.isAdmin()) {
+          <span class="small text-body-secondary">Comments appear for others after an admin approves them.</span>
+        }
+      </div>
+    </form>
+  } @else {
+    <p class="text-body-secondary small mt-3">Comments open once this post is approved.</p>
+  }
+}
