@@ -34,7 +34,7 @@ Database (reset to clean sample data; also drops anything added through the app)
 D:\Software_DEV\xampp\mysql\bin\mysql.exe -u root < database/community_db.sql
 ```
 
-`.claude/launch.json` has `backend` and `frontend` configs for the preview browser. Sample logins: `admin`/`Admin@123`, `sara`/`User@123` (approved), `maria` (pending), `tom` (blocked).
+`.claude/launch.json` has `backend` and `frontend` configs for the preview browser. Sample logins: `admin`/`Admin@123`, `sara` and `john`/`User@123` (approved), `maria` (pending), `tom` (blocked).
 
 ## Architecture: things that span several files
 
@@ -68,3 +68,13 @@ Every admin action in `moderation/views.py` writes a `moderation_logs` row via `
 ## Repo / git
 
 This folder sits inside the larger `D:\Software_DEV` git repo, which holds many unrelated projects. Stage only paths under `Claude-Code/angular-django`. Work for this app is on branch `community-app`.
+
+**Publishing.** This folder alone is published to the **public** repo `ibrahimcsharp/community-app` (remote `community-app` in the parent repo) with a subtree split, run from `D:\Software_DEV`:
+
+```bash
+git push community-app $(git subtree split --prefix=Claude-Code/angular-django community-app):refs/heads/main
+```
+
+Because the repo is public, make sure no `backend/.env` or real keys are tracked before pushing.
+
+`.claude/settings.json` denies `makemigrations` and any read or edit of `backend/.env`, and asks before `git push` or anything touching `community_db.sql`.
